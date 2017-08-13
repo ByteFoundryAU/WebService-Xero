@@ -5,12 +5,12 @@ use strict;
 use warnings;
 use Carp;
 
-use Data::Dumper;
 use JSON::XS;
 use WebService::Xero::DateTime;
 use WebService::Xero::Phone;
 use WebService::Xero::Address;
 use WebService::Xero::ContactPerson;
+
 =head1 NAME
 
 WebService::Xero::Contact - encapsulates a Xero API Contact record
@@ -23,16 +23,33 @@ Version 0.12
 
 our $VERSION = '0.12';
 
-our @PARAMS = qw/ContactID ContactNumber ContactStatus AccountNumber Name FirstName LastName EmailAddress SkypeUserName
-                 BankAccountDetails TaxNumber AccountsReceivableTaxType AccountsPayableTaxType
-                 UpdatedDateUTC IsCustomer IsSupplier HasAttachments HasValidationErrors
-                 Addresses Phones ContactGroups ContactPersons DefaultCurrency
-                /;
-
-
+our @PARAMS = qw/
+    AccountNumber
+    AccountsPayableTaxType
+    AccountsReceivableTaxType
+    Addresses
+    BankAccountDetails
+    ContactGroups
+    ContactID
+    ContactNumber
+    ContactPersons
+    ContactStatus
+    DefaultCurrency
+    EmailAddress
+    FirstName
+    HasAttachments
+    HasValidationErrors
+    IsCustomer
+    IsSupplier
+    LastName
+    Name
+    Phones
+    SkypeUserName
+    TaxNumber
+    UpdatedDateUTC
+/;
 
 =head1 SYNOPSIS
-
 
 Object to describe an Contact record as specified by Xero API and the associated DTD at
 L<https://github.com/XeroAPI/XeroAPI-Schemas/blob/master/src/main/resources/XeroSchemas/v2.00/Contact.xsd>.
@@ -42,12 +59,10 @@ assist in manipulating.
 
 Also provide a few helper functions such as get_all_using_agent() which includes paging.
 
-
-
 =head2 Example 1
 
     use WebService::Xero::Agent::PrivateApplication;
-    use  WebService::Xero::Contact;
+    use WebService::Xero::Contact;
 
     my $agent            = WebService::Xero::Agent::PrivateApplication->new( ... etc
     my $contact_response = $agent->do_xero_api_call( 'https://api.xero.com/api.xro/2.0/Contacts/297c2dc5-cc47-4afd-8ec8-74990b8761e9' ) || die( 'check the agent for error message' );
@@ -111,25 +126,23 @@ sub new
     if ( $self->{UpdatedDateUTC} ne '')
     {
       $self->{UpdatedDateUTC} = WebService::Xero::DateTime->new( "$self->{UpdatedDateUTC}" );
-     # print Dumper   $self->{UpdatedDateUTC} ;
     }
     if ( ref( $self->{Phones} ) eq 'ARRAY' )
     {
-      my $phones_list = $self->{Phones};
-      $self->{Phones} = [];
-      foreach my $phone ( @{$phones_list})
-      {
-        push $self->{Phones}, WebService::Xero::Phone->new( $phone ) || return $self->_error('Failed to create Phone instance');
-      }
+      $self->{Phones} = [
+          map {
+              WebService::Xero::Phone->new( $_ )
+                  or return  $self->_error('Failed to create Phone instance');
+          } @{$self->{Phones}}
+      ];
     }
     if ( ref( $self->{Addresses} ) eq 'ARRAY' )
     {
-      my $address_list = $self->{Addresses};
-      $self->{Addresses} = [];
-      foreach my $address ( @{$address_list})
-      {
-        push $self->{Addresses}, WebService::Xero::Address->new( $address ) || return $self->_error('Failed to create Address instance');
-      }
+      $self->{Addresses} = [
+          map { WebService::Xero::Address->new( $_ )
+              or return $self->_error('Failed to create Address instance')
+          } @{$self->{Addresses}}
+      ];
     }
 
     ## ContactStatus: [ ACTIVE || ARCHIVED ]
@@ -163,10 +176,14 @@ sub new
 sub get_all_using_agent
 {
   my ( $self, %params ) = @_;
-  $self = WebService::Xero::Contact->new() if ( $self eq 'WebService::Xero::Contact'); ## create an instance if called without one
-  return $self->_error('agent is a required parameter') unless ( ref( $params{agent} ) =~ /^WebService::Xero::Agent/m);
+  $self = $self->new() unless ref $self; ## create an instance if called without one
+  return $self->_error('agent is a required parameter')
+      unless ( ref( $params{agent} ) =~ m/^WebService::Xero::Agent/m);
 
-  my $page = 1; my $finished = 0; my $all_contacts = [];
+  my $page = 1;
+  my $finished = 0;
+  my $all_contacts = [];
+
   do  ## 'https://api.xero.com/api.xro/2.0/Contacts'
   {
     if ( my $res = $params{agent}->do_xero_api_call( "$self->{API_URL}?page=$page" ) )
@@ -218,7 +235,6 @@ sub new_array_from_api_data
 
 =cut
 
-
 sub as_text
 {
     my ( $self, $sep, $show_head  ) = @_;
@@ -234,7 +250,7 @@ sub as_text
       }
       elsif ( ref($self->{$prop}) eq 'WebService::Xero::DateTime' )
       {
-        $ret .= $self->{$prop}->as_datetime() . "$sep";
+        $ret .= $self->{$prop}->as_datetime() . $sep;
       }
       elsif ( ref($self->{$prop}) eq 'JSON::PP::Boolean')
       {
@@ -248,7 +264,7 @@ sub as_text
         {
           #$ret .= ref( $item );
 
-          if ( $item_class eq 'unknown' && ref($item) =~ /WebService::Xero/m )
+          if ( $item_class eq 'unknown' && ref($item) =~ m/WebService::Xero/m )
           {
             $item_class = ref($item);
           }
@@ -270,12 +286,12 @@ sub as_text
         else
         {
           $item_class = "$prop as hashes" if $item_class eq 'HASH';
-          $ret .= "$count Records ($item_class)" . $sep;
+          $ret .= "$count Records ($item_class)$sep";
         }
       }
       else
       {
-        $ret .= ref($self->{$prop}) . "$sep";
+        $ret .= ref($self->{$prop}) . $sep;
       }
     }
     $head =~ s/$sep$/\n/smg; ## replace trailing sep from head with newline
@@ -293,11 +309,12 @@ sub as_text
   returns the object including all properties as a JSON struct.
 
 =cut
+
 sub as_json
 {
   my ( $self ) = @_;
-  my $json = new JSON::XS;
-  $json = $json->convert_blessed ([1]);
+  my $json = JSON::XS->new();
+  $json = $json->convert_blessed([1]);
   return  $json->encode( $self ) ;
 }
 
@@ -305,36 +322,14 @@ sub as_json
 
 =head2 TO_JSON()
 
-  is called by a potential parent to_json that recursively looks for an unblssed version using calls to TO_JSON.
+  is called by a potential parent to_json that recursively looks for an unblessed version using calls to TO_JSON.
 
 =cut
 sub TO_JSON
 {
   my ( $self ) = @_;
   return {
-            ContactID      => $self->{ContactID},
-            ContactNumber  => $self->{ContactNumber},
-            ContactStatus  => $self->{ContactStatus},
-            AccountNumber  => $self->{AccountNumber},
-            Name           => $self->{Name},
-            FirstName      => $self->{FirstName},
-            LastName       => $self->{LastName},
-            EmailAddress   => $self->{EmailAddress},
-            SkypeUserName  => $self->{SkypeUserName},
-            BankAccountDetails => $self->{BankAccountDetails},
-            TaxNumber      => $self->{TaxNumber},
-            AccountsReceivableTaxType => $self->{AccountsReceivableTaxType},
-            AccountsPayableTaxType => $self->{AccountsPayableTaxType},
-            UpdatedDateUTC => $self->{UpdatedDateUTC}, #->TO_JSON(),
-            IsCustomer     => $self->{IsCustomer},
-            IsSupplier     => $self->{IsSupplier},
-            HasAttachments => $self->{HasAttachments},
-            HasValidationErrors => $self->{HasValidationErrors},
-            Addresses      => $self->{Addresses},
-            Phones         => $self->{Phones}, #$self->Phones_as_JSON(),
-            ContactGroups  => $self->{ContactGroups},
-            ContactPersons => $self->{ContactPersons},
-            DefaultCurrency => $self->{DefaultCurrency},
+      map { +( $_ => $self->{$_} ) } @PARAMS
   };
 }
 
@@ -396,9 +391,9 @@ The following properties can be accessed as hash keyed values such as $contact->
 
 =item  * Name
 
-=item  *  Phones
+=item  * Phones
 
-=item  *  SkypeUserName
+=item  * SkypeUserName
 
 =item  * TaxNumber
 
