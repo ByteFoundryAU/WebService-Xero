@@ -103,7 +103,8 @@ sub new
       debug => $params{debug},
       API_URL => 'https://api.xero.com/api.xro/2.0/Contacts',
 
-    }, $class;
+    }, ref $class || $class;
+
     foreach my $key (@PARAMS) { $self->{$key} = defined $params{$key} ? $params{$key} : '';  }
 
     ## morph from text to expected types
