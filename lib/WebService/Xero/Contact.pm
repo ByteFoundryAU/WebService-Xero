@@ -23,7 +23,7 @@ Version 0.12
 
 our $VERSION = '0.12';
 
-our @PARAMS = qw/ContactID ContactNumber ContactStatus AccountNumber Name FirstName LastName EmailAddress SkypeUserName 
+our @PARAMS = qw/ContactID ContactNumber ContactStatus AccountNumber Name FirstName LastName EmailAddress SkypeUserName
                  BankAccountDetails TaxNumber AccountsReceivableTaxType AccountsPayableTaxType
                  UpdatedDateUTC IsCustomer IsSupplier HasAttachments HasValidationErrors
                  Addresses Phones ContactGroups ContactPersons DefaultCurrency
@@ -34,11 +34,11 @@ our @PARAMS = qw/ContactID ContactNumber ContactStatus AccountNumber Name FirstN
 =head1 SYNOPSIS
 
 
-Object to describe an Contact record as specified by Xero API and the associated DTD at 
+Object to describe an Contact record as specified by Xero API and the associated DTD at
 L<https://github.com/XeroAPI/XeroAPI-Schemas/blob/master/src/main/resources/XeroSchemas/v2.00/Contact.xsd>.
 
-Encapsulate Xero Contact data structure and handles some of the conversion for nested structures, dates and booleans to 
-assist in manipulating. 
+Encapsulate Xero Contact data structure and handles some of the conversion for nested structures, dates and booleans to
+assist in manipulating.
 
 Also provide a few helper functions such as get_all_using_agent() which includes paging.
 
@@ -49,7 +49,7 @@ Also provide a few helper functions such as get_all_using_agent() which includes
     use WebService::Xero::Agent::PrivateApplication;
     use  WebService::Xero::Contact;
 
-    my $agent            = WebService::Xero::Agent::PrivateApplication->new( ... etc 
+    my $agent            = WebService::Xero::Agent::PrivateApplication->new( ... etc
     my $contact_response = $agent->do_xero_api_call( 'https://api.xero.com/api.xro/2.0/Contacts/297c2dc5-cc47-4afd-8ec8-74990b8761e9' ) || die( 'check the agent for error message' );
 
     my $contact =  WebService::Xero::Contact->new( $contact_response->{Contacts}[0] );
@@ -58,9 +58,9 @@ Also provide a few helper functions such as get_all_using_agent() which includes
 =head2 Example 2
     use WebService::Xero::Agent::PrivateApplication;
     use  WebService::Xero::Contact;
-    my $agent            = WebService::Xero::Agent::PrivateApplication->new( ... etc     
+    my $agent            = WebService::Xero::Agent::PrivateApplication->new( ... etc
 
-    my $contact_list = WebService::Xero::Contact->get_all_using_agent( agent=> $agent ); 
+    my $contact_list = WebService::Xero::Contact->get_all_using_agent( agent=> $agent );
     foreach my $contact ( @$contact_list )
     {
       # print $contact->as_json();
@@ -94,11 +94,11 @@ Also provide a few helper functions such as get_all_using_agent() which includes
 
 =cut
 
-sub new 
+sub new
 {
   my ( $class, %params ) = @_;
 
-    my $self = bless 
+    my $self = bless
     {
       debug => $params{debug},
       API_URL => 'https://api.xero.com/api.xro/2.0/Contacts',
@@ -112,7 +112,7 @@ sub new
       $self->{UpdatedDateUTC} = WebService::Xero::DateTime->new( "$self->{UpdatedDateUTC}" );
      # print Dumper   $self->{UpdatedDateUTC} ;
     }
-    if ( ref( $self->{Phones} ) eq 'ARRAY' ) 
+    if ( ref( $self->{Phones} ) eq 'ARRAY' )
     {
       my $phones_list = $self->{Phones};
       $self->{Phones} = [];
@@ -121,7 +121,7 @@ sub new
         push $self->{Phones}, WebService::Xero::Phone->new( $phone ) || return $self->_error('Failed to create Phone instance');
       }
     }
-    if ( ref( $self->{Addresses} ) eq 'ARRAY' ) 
+    if ( ref( $self->{Addresses} ) eq 'ARRAY' )
     {
       my $address_list = $self->{Addresses};
       $self->{Addresses} = [];
@@ -141,7 +141,7 @@ sub new
 
 =head2 new_using_agent()
 
-  Input Parameters: 
+  Input Parameters:
      agent => an agent of type Xero::WebService::Agent::* - this is used to handle to handle the communciation with Xero Servers
      filters => { ## an optional set of parameters to be passed as part of the request to xero
        not implemented yet
@@ -157,7 +157,7 @@ sub new
     Where multiple valid results are returned by the Xero Agent, an array of instances of WebService::Xero::Contact is returned.
 
 
-=cut 
+=cut
 
 sub get_all_using_agent
 {
@@ -175,7 +175,7 @@ sub get_all_using_agent
       $finished = 1 if (@$paged_contacts != 100 );
       push @$all_contacts, @$paged_contacts;
     }
-    else 
+    else
     {
        return $self->_error('FAILED: agent returned an error - check the agent status for details');
     }
@@ -185,7 +185,7 @@ sub get_all_using_agent
 
 =head2 new_from_api_data()
 
-  creates a new instance from the data provided by querying the API organisation end point 
+  creates a new instance from the data provided by querying the API organisation end point
   ( typically handled by WebService::Xero::Agent->do_xero_api_call() )
 
   Example Contact Queries using Xero Agent that return Data consumable by this method:
@@ -194,7 +194,7 @@ sub get_all_using_agent
   Returns undef, a single object instance or an array of object instances depending on the data input provided.
 
 
-=cut 
+=cut
 
 sub new_array_from_api_data
 {
@@ -207,7 +207,7 @@ sub new_array_from_api_data
     push @$contacts_list, WebService::Xero::Contact->new( %{$contact} );
   }
   return $contacts_list;
-  # return WebService::Xero::Contact->new( debug=> $data );  
+  # return WebService::Xero::Contact->new( debug=> $data );
 
 }
 
@@ -218,7 +218,7 @@ sub new_array_from_api_data
 =cut
 
 
-sub as_text 
+sub as_text
 {
     my ( $self, $sep, $show_head  ) = @_;
     $sep = "\n" unless $sep;
@@ -230,11 +230,11 @@ sub as_text
       if ( ref($self->{$prop}) eq '') ## then assume string or scalar
       {
         $ret .= "$self->{$prop}$sep";
-      } 
+      }
       elsif ( ref($self->{$prop}) eq 'WebService::Xero::DateTime' )
       {
         $ret .= $self->{$prop}->as_datetime() . "$sep";
-      } 
+      }
       elsif ( ref($self->{$prop}) eq 'JSON::PP::Boolean')
       {
         $ret .= ('false','true')[$self->{$prop}] . $sep;
@@ -246,7 +246,7 @@ sub as_text
         foreach my $item ( @{$self->{$prop}} )
         {
           #$ret .= ref( $item );
-          
+
           if ( $item_class eq 'unknown' && ref($item) =~ /WebService::Xero/m )
           {
             $item_class = ref($item);
@@ -266,7 +266,7 @@ sub as_text
           $ret .= "EMPTY LIST of $prop" . $sep;
 
         }
-        else 
+        else
         {
           $item_class = "$prop as hashes" if $item_class eq 'HASH';
           $ret .= "$count Records ($item_class)" . $sep;
@@ -291,13 +291,13 @@ sub as_text
 
   returns the object including all properties as a JSON struct.
 
-=cut 
+=cut
 sub as_json
 {
   my ( $self ) = @_;
   my $json = new JSON::XS;
   $json = $json->convert_blessed ([1]);
-  return  $json->encode( $self ) ; 
+  return  $json->encode( $self ) ;
 }
 
 
@@ -309,7 +309,7 @@ sub as_json
 =cut
 sub TO_JSON
 {
-  my ( $self ) = @_; 
+  my ( $self ) = @_;
   return {
             ContactID      => $self->{ContactID},
             ContactNumber  => $self->{ContactNumber},
@@ -334,7 +334,7 @@ sub TO_JSON
             ContactGroups  => $self->{ContactGroups},
             ContactPersons => $self->{ContactPersons},
             DefaultCurrency => $self->{DefaultCurrency},
-  }; 
+  };
 }
 
 sub _error
