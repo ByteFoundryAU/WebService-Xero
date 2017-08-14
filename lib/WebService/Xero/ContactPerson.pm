@@ -1,7 +1,7 @@
 package WebService::Xero::ContactPerson;
 
-use Moose;
- 
+use Moo;
+
 has 'FirstName'       => (is => 'rw');
 has 'LastName'        => (is => 'rw');
 has 'EmailAddress'    => (is => 'rw');

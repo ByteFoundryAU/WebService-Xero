@@ -1,6 +1,6 @@
 package WebService::Xero::Phone;
 
-use Moose;
+use Moo;
 has 'PhoneNumber'      => (is => 'rw');
 has 'PhoneType'        => (is => 'rw');
 has 'PhoneAreaCode'    => (is => 'rw');

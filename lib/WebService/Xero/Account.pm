@@ -1,6 +1,6 @@
 package WebService::Xero::Account;
 
-use Moose;
+use Moo;
 has 'ValidationErrors'      => (is => 'rw');
 has 'Warnings'              => (is => 'rw');
 has 'AccountID'             => (is => 'rw');

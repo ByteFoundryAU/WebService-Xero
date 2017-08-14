@@ -1,7 +1,7 @@
 package WebService::Xero::Address;
 
-use Moose;
- 
+use Moo;
+
 has 'AddressLine1'   => (is => 'rw');
 has 'Country'        => (is => 'rw');
 has 'City'           => (is => 'rw');
